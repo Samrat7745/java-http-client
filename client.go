@@ -8,6 +8,7 @@ package httpclient
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,6 +38,7 @@ type config struct {
 	trustedCertificates  []string
 	allowUnknownFields   bool
 	timeout              time.Duration
+	maxIdleConnsPerHost  int
 	logger               *slog.Logger
 	transport            http.RoundTripper
 }
@@ -77,6 +79,12 @@ func WithTimeout(timeout time.Duration) Option {
 	return func(c *config) { c.timeout = timeout }
 }
 
+// WithMaxIdleConnsPerHost sets how many idle connections are kept per host
+// for reuse. Values below 1 select the default of [net/http] (2).
+func WithMaxIdleConnsPerHost(n int) Option {
+	return func(c *config) { c.maxIdleConnsPerHost = n }
+}
+
 // WithLogger sets the logger used for debug output. By default the logger
 // returned by [slog.Default] is used.
 func WithLogger(logger *slog.Logger) Option {
@@ -108,8 +116,17 @@ func New[L any](opts ...Option) (*Client[L], error) {
 			return nil, newError("Unable to configure certificate management", err)
 		}
 		t := http.DefaultTransport.(*http.Transport).Clone()
-		if tlsCfg != nil {
-			t.TLSClientConfig = tlsCfg
+		if tlsCfg == nil {
+			tlsCfg = &tls.Config{MinVersion: tls.VersionTLS12}
+		}
+		// HTTP/1.1 only, like the Java client this package replaces. The TLS
+		// configuration is always replaced, as the one of the default
+		// transport may already offer HTTP/2.
+		t.TLSClientConfig = tlsCfg
+		t.ForceAttemptHTTP2 = false
+		t.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+		if cfg.maxIdleConnsPerHost > 0 {
+			t.MaxIdleConnsPerHost = cfg.maxIdleConnsPerHost
 		}
 		transport = t
 	}

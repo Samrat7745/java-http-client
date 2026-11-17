@@ -111,6 +111,7 @@ New in Go, without a Java counterpart:
 - `WithLogger(*slog.Logger)` selects the logger for debug output.
 - `Client.Close()` closes idle pooled connections.
 - `WithTimeout(d)` limits the duration of a whole request.
+- `WithMaxIdleConnsPerHost(n)` sizes the connection pool.
 - `Client.HTTPClient()` returns the configured `*http.Client` for requests
   that do not fit the JSON operations.
 - Every request takes a `context.Context` for cancellation and deadlines.
@@ -177,6 +178,8 @@ These would have changed with a naive port and were implemented explicitly.
   DELETE is returned as a failure response. Go's default would have followed
   them.
 - **Response bodies of `Put` and `Delete`** are ignored on success.
+- **Protocol.** Requests use HTTP/1.1; HTTP/2, which Go would negotiate by
+  default, is switched off.
 
 ### Changed
 
@@ -190,8 +193,7 @@ These would have changed with a naive port and were implemented explicitly.
 | JVM system properties | `http.proxyHost`, `http.nonProxyHosts`, `javax.net.ssl.trustStore`, `javax.net.ssl.keyStore`, `http.agent` and others were honoured | Proxy from `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`; system roots from the OS, `SSL_CERT_FILE`, `SSL_CERT_DIR` | Deployments configured through `-D` flags need the environment variables instead. Client certificates through `javax.net.ssl.keyStore` are no longer possible. |
 | Timeouts | None by default | 30 s to connect and 10 s for the TLS handshake (Go defaults); no overall timeout unless the context has a deadline | Hung connection attempts now fail. |
 | Cancellation | Not possible | Through `context.Context` | New capability. |
-| Protocol | HTTP/1.1 | HTTP/2 if the server offers it, HTTP/1.1 otherwise | Transparent. |
-| `User-Agent` | `Apache-HttpClient/4.5.14 (Java/...)` | `Go-http-client/1.1` (or `2.0`) | Visible in server logs and to user-agent filters. |
+| `User-Agent` | `Apache-HttpClient/4.5.14 (Java/...)` | `Go-http-client/1.1` | Visible in server logs and to user-agent filters. |
 | Certificate files | Only the first certificate of each file was loaded | All certificates of a PEM bundle are loaded; a single DER certificate is accepted too | A bundle now trusts every certificate it contains. |
 | Certificate errors | Cause was a `CertificateException` | Cause is the file system or parsing error (`fs.ErrNotExist` for a missing file) | Code inspecting the cause changes. |
 | Untrusted server | Cause was `SSLHandshakeException` | Cause is `*tls.CertificateVerificationError` wrapping `x509.UnknownAuthorityError` | Code inspecting the cause changes. |

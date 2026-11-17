@@ -185,3 +185,28 @@ func TestCertPool_ReadsAllCertificatesOfABundle(t *testing.T) {
 		t.Errorf("parseCertificates() = %d certificates, %v; want 2", len(certs), err)
 	}
 }
+
+func TestTransport_UsesHTTP1AndIdleConnectionSetting(t *testing.T) {
+	var proto string
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proto = r.Proto
+	}))
+	srv.EnableHTTP2 = true
+	srv.Config.ErrorLog = log.New(io.Discard, "", 0)
+	srv.StartTLS()
+	defer srv.Close()
+	client, err := New[string](WithoutSSLValidation(true), WithMaxIdleConnsPerHost(7))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	if _, err := GetForEntity[string](context.Background(), client, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if proto != "HTTP/1.1" {
+		t.Errorf("protocol = %s, want HTTP/1.1", proto)
+	}
+	if got := client.HTTPClient().Transport.(*http.Transport).MaxIdleConnsPerHost; got != 7 {
+		t.Errorf("MaxIdleConnsPerHost = %d, want 7", got)
+	}
+}
