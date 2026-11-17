@@ -14,6 +14,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 const maxRedirects = 50
@@ -35,6 +36,7 @@ type config struct {
 	withoutSSLValidation bool
 	trustedCertificates  []string
 	allowUnknownFields   bool
+	timeout              time.Duration
 	logger               *slog.Logger
 	transport            http.RoundTripper
 }
@@ -66,6 +68,13 @@ func WithTrustedCertificates(files ...string) Option {
 // By default such responses are rejected.
 func WithUnknownFieldsAllowed() Option {
 	return func(c *config) { c.allowUnknownFields = true }
+}
+
+// WithTimeout limits the time of a whole request, including connecting,
+// redirects and reading the response body. Zero, the default, means no limit
+// other than the one of the request's context.
+func WithTimeout(timeout time.Duration) Option {
+	return func(c *config) { c.timeout = timeout }
 }
 
 // WithLogger sets the logger used for debug output. By default the logger
@@ -107,7 +116,9 @@ func New[L any](opts ...Option) (*Client[L], error) {
 	if cfg.retries > 0 {
 		transport = &retryTransport{base: transport, retries: cfg.retries}
 	}
-	client.httpClient = &http.Client{Transport: transport, CheckRedirect: checkRedirect}
+	client.httpClient = &http.Client{
+		Transport: transport, CheckRedirect: checkRedirect, Timeout: cfg.timeout,
+	}
 	return client, nil
 }
 
@@ -126,6 +137,13 @@ func NewDefault() (*Client[string], error) {
 // given number of retries.
 func NewDefaultWithRetries(numberOfRetries int) (*Client[string], error) {
 	return NewWithRetries[string](numberOfRetries)
+}
+
+// HTTPClient returns the underlying HTTP client. It carries the TLS, retry,
+// redirect and timeout configuration of c and can be used for requests that
+// do not fit the JSON operations of this package.
+func (c *Client[L]) HTTPClient() *http.Client {
+	return c.httpClient
 }
 
 // Close closes the idle connections held by the client.

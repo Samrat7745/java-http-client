@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 const (
@@ -487,5 +488,44 @@ func TestContextCancellation(t *testing.T) {
 	_, err = GetForEntity[string](ctx, client, srv.URL)
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("err = %v, want context.Canceled", err)
+	}
+}
+
+func TestTimeout(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	defer srv.Close()
+	defer close(release)
+	client, err := New[string](WithTimeout(50 * time.Millisecond))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	_, err = GetForEntity[string](context.Background(), client, srv.URL)
+	var csErr *Error
+	if !errors.As(err, &csErr) || !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v, want a timeout", err)
+	}
+}
+
+func TestHTTPClient_CarriesConfiguration(t *testing.T) {
+	f := &flakyTransport{failures: 1, err: io.ErrUnexpectedEOF}
+	client := newTestClient(t, f, WithRetries(1), WithTimeout(time.Minute))
+	hc := client.HTTPClient()
+	if hc.Timeout != time.Minute {
+		t.Errorf("timeout = %v", hc.Timeout)
+	}
+	resp, err := hc.Get(dummyURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if f.calls != 2 {
+		t.Errorf("calls = %d, want 2 (retry applied)", f.calls)
 	}
 }

@@ -110,6 +110,9 @@ New in Go, without a Java counterpart:
   `@JsonIgnoreProperties(ignoreUnknown = true)` on a response type.
 - `WithLogger(*slog.Logger)` selects the logger for debug output.
 - `Client.Close()` closes idle pooled connections.
+- `WithTimeout(d)` limits the duration of a whole request.
+- `Client.HTTPClient()` returns the configured `*http.Client` for requests
+  that do not fit the JSON operations.
 - Every request takes a `context.Context` for cancellation and deadlines.
 
 ### Differences in API shape
