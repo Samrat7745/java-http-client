@@ -1,3 +1,3 @@
-module github.com/carbynestack/java-http-client
+module github.com/Samrat7745/java-http-client
 
 go 1.26

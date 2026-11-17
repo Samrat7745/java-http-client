@@ -10,7 +10,7 @@ changed, how the API maps, and where the behaviour differs.
   root. It uses the standard library only.
 - All Java sources, the Maven build and the Java-specific third-party license
   files were removed.
-- The module path is `github.com/carbynestack/java-http-client` and the
+- The module path is `github.com/Samrat7745/java-http-client` and the
   release tag format `java-http-client-vX.Y.Z` is unchanged.
 - The Java test suite was run before removal and passed. Every Java test has a
   Go counterpart, and all Go tests pass.
@@ -240,14 +240,16 @@ as that needs a push and tools that are not installed locally.
 - **Release tags and Go versions.** The tag format `java-http-client-vX.Y.Z`
   was kept as requested. Go only recognises tags of the form `vX.Y.Z` as
   module versions, so consumers get a pseudo-version
-  (`go get github.com/carbynestack/java-http-client@java-http-client-v0.3.0`
+  (`go get github.com/Samrat7745/java-http-client@java-http-client-v0.3.0`
   resolves to one). Switching to plain `vX.Y.Z` tags needs
   `"include-component-in-tag": false` in `release-please-config.json` and the
   new pattern in `go.publish.yaml`.
 - **Module path.** The path still contains `java` because it has to match the
   repository URL. Renaming the repository would change the import path.
-- **Fork.** The module path names `carbynestack`, while this checkout's remote
-  is a fork. `go get` of the module resolves to the upstream repository.
+- **Fork.** The module path names the fork `Samrat7745/java-http-client`, so
+  that other modules can fetch it. It has to be changed back to
+  `github.com/carbynestack/java-http-client` before the work is merged
+  upstream.
 - **`commitlint.config.js`** still enforces the scope `java-http-client`.
 - **`NOTICE.md`** was left as is; add the contributors of the migration as
   appropriate.

@@ -20,11 +20,11 @@ The module requires Go 1.26 or later and has no dependencies besides the
 standard library.
 
 ```shell
-go get github.com/carbynestack/java-http-client
+go get github.com/Samrat7745/java-http-client
 ```
 
 ```go
-import httpclient "github.com/carbynestack/java-http-client"
+import httpclient "github.com/Samrat7745/java-http-client"
 
 // ErrorBody is what the service returns for non 2xx status codes.
 type ErrorBody struct {
