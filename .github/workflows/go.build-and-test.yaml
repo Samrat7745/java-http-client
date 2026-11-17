@@ -1,0 +1,52 @@
+#
+# Copyright (c) 2021-2026 - for information on the respective copyright owner
+# see the NOTICE file and/or the repository https://github.com/carbynestack/java-http-client.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+name: Build and test artifacts
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+  pull_request:
+    branches:
+      - 'master'
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        go: ['1.26', '1.27']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Build
+        run: go build ./...
+      - name: Vet
+        run: go vet -tags integration ./...
+  test:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        go: ['1.26', '1.27']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Run Tests
+        run: go test -race -tags integration -covermode=atomic -coverprofile=coverage.out ./...
+      - uses: codecov/codecov-action@v2
+        if: matrix.go == '1.27'
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
+          name: codecov

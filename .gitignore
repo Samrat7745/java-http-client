@@ -4,3 +4,8 @@
 out
 gen
 target
+
+# Go
+*.test
+*.out
+/vendor/

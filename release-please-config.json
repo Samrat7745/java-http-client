@@ -7,7 +7,7 @@
     "packages": {
         ".": {
             "package-name": "java-http-client",
-            "release-type": "maven"
+            "release-type": "go"
         }
     }
 }

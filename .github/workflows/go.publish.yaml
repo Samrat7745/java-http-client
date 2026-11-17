@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2021-2023 - for information on the respective copyright owner
+# Copyright (c) 2021-2026 - for information on the respective copyright owner
 # see the NOTICE file and/or the repository https://github.com/carbynestack/java-http-client.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -9,6 +9,9 @@ on:
   push:
     tags:
       - "java-http-client-v[0-9]+.[0-9]+.[0-9]+"
+# A Go module is consumed straight from the repository, so there is no artifact
+# to build or deploy. This workflow only attaches the license obligation
+# resources of 3rd party dependencies (if any) to the release.
 jobs:
   publish:
     runs-on: ubuntu-22.04
@@ -48,21 +51,3 @@ jobs:
           makeLatest: true
           omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
-      - name: Setup java
-        uses: actions/setup-java@v3
-        with:
-          java-version: '8'
-          distribution: 'temurin'
-          cache: 'maven'
-      - name: Setting up Github Package Repository as Maven Repository
-        uses: s4u/maven-settings-action@v2.8.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-                "id": "github",
-                "username": "${{ secrets.GHPR_USERNAME }}",
-                "password": "${{ secrets.GHPR_TOKEN }}"
-            }]
-      - name: Publish version to GitHub Packages
-        run: mvn deploy -Dskip.tests --batch-mode --no-transfer-progress
